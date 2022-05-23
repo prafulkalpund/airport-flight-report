@@ -1,0 +1,144 @@
+Get any 100 airports using: https://api.aviationstack.com/v1/airports
+    ? access_key = YOUR_ACCESS_KEY
+
+Store them in database in json format for backup
+------------------------------------------------------------------------------------------------------------------------
+Considering airport is fixed and that is Heathrow iata_code: "LHR", city: London
+
+Departure link: http://api.aviationstack.com/v1/flights?access_key=eead096fd179621c96778d5cb0e507a6&dep_iata=LHR
+
+Arrival link: http://api.aviationstack.com/v1/flights?access_key=eead096fd179621c96778d5cb0e507a6&arr_iata=LHR
+
+Available data:
+
+flight_date
+flight_status
+
+airline
+- iata
+- name
+
+departure
+- iata
+- icao
+- airport
+- time
+- terminal
+- gate
+- date
+- timezone
+- scheduled
+- estimated
+
+Arrival
+- iata_code
+- airport name
+- time
+- terminal
+- date
+- timezone
+
+flight
+- number
+- iata
+- icao
+
+Database structure: 
+
+Option 1:
+1. Table for airport 
+2. Flight details table: Flight number, iata - common airport id
+3. Arrival details table: all Arrival column - common airport id
+4. Departure details table: all Arrival column - common airport id
+
+
+Option 2:
+1. Table for airport 
+2. Flight, arrival and departure details all together with unique type(Arrival or Departure) - common airport id
+
+
+Approach: 
+LHR airport 
+Two options: Arrival or Departure
+Lets say user clicked on Arrival
+{
+    Load all LHR arrivals 
+        id, flight[iata], departure time, iata, arrivals time, iata
+        {
+            -  On click -> Pop up show with two sections
+                - Departure: time, iata, airport name, timezone, terminal, gate, scheduled, estimated
+                - Arrival: time, iata, airport name, timezone, terminal, gate, scheduled, estimated
+            - Close pop up
+        } = This can also be acordian if we use datatable
+} = Will use Ajax to load data
+
+Clicked Departure
+{
+    Load all LHR departure 
+        id, flight[iata], departure time, iata, arrivals time, iata
+        {
+            -  On click -> Pop up show with two sections
+                - Departure: time, iata, airport name, timezone, terminal, gate, scheduled, estimated
+                - Arrival: time, iata, airport name, timezone, terminal, gate, scheduled, estimated
+            - Close pop up
+        } = This can also be acordian if we use datatable
+} = Will use Ajax
+
+
+
+
+
+
+
+
+
+
+----------------------ignore-----------------------
+
+"departure": {
+                "airport": "San Francisco International",
+                "timezone": "America/Los_Angeles",
+                "iata": "SFO",
+                "icao": "KSFO",
+                "terminal": "2",
+                "gate": "D11",
+                "delay": 13,
+                "scheduled": "2019-12-12T04:20:00+00:00",
+                "estimated": "2019-12-12T04:20:00+00:00",
+                "actual": "2019-12-12T04:20:13+00:00",
+                "estimated_runway": "2019-12-12T04:20:13+00:00",
+                "actual_runway": "2019-12-12T04:20:13+00:00"
+            }
+
+            arrival": {
+                "airport": "Dallas/Fort Worth International",
+                "timezone": "America/Chicago",
+                "iata": "DFW",
+                "icao": "KDFW",
+                "terminal": "A",
+                "gate": "A22",
+                "baggage": "A17",
+                "delay": 0,
+                "scheduled": "2019-12-12T04:20:00+00:00",
+                "estimated": "2019-12-12T04:20:00+00:00",
+                "actual": null,
+                "estimated_runway": null,
+                "actual_runway": null
+            },
+
+
+    airports
+        {
+    "airport_name": "Anaa",
+    "iata_code": "AAA",
+    "icao_code": "NTGA",
+    "latitude": "-17.05",
+    "longitude": "-145.41667",
+    "geoname_id": "6947726",
+    "timezone": "Pacific/Tahiti",
+    "gmt": "-10",
+    "phone_number": null,
+    "country_name": "French Polynesia",
+    "country_iso2": "PF",
+    "city_iata_code": "AAA"
+},
