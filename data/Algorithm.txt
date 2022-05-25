@@ -56,6 +56,15 @@ Option 2:
 1. Table for airport 
 2. Flight, arrival and departure details all together with unique type(Arrival or Departure) - common airport id
 
+Option 3:
+1. Post Title - airport iata
+2. Post Content - airport name
+
+
+Postmeta
+1. post id - postId
+2. meta_key - atf_departure; meta_value - json_response 
+2. meta_key - atf_arrival; meta_value - json_response
 
 Approach: 
 LHR airport 

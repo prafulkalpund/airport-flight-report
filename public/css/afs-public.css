@@ -1,0 +1,11 @@
+.afs_accordion .col-sm .text {
+    font-size: smaller;
+}
+
+h1, h2, h3, h4, h5, h6, p, span {
+    margin: 0;
+}
+
+#afs_flight_between_airports thead {
+    display: none;
+}
