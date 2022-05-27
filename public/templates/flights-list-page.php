@@ -4,13 +4,19 @@ if(empty($flights)){
     echo '<h2>No data found</h2>';
     return;
 }
+
+$afs_default_airport_iata = get_option('afs_default_airport_iata');
+if(empty($afs_default_airport_iata)){
+    $afs_default_airport_iata = 'LHR';
+}
 ?>
 <div id="afs_accordion" class="afs_accordion">
     <input type="hidden" id="afs_airport_page_link" value="<?php echo get_permalink(get_option('afs_airport_page_id'));?>">
+    <input type="hidden" id="afs_default_airport_iata" value="<?php echo $afs_default_airport_iata;?>">
 <table id="afs_flights_table" class="display" style="width:100%">
     <thead>
         <tr>
-            <th>Flight</th>
+            <th><?php _e( 'Flight', 'airport-flight-status' );?></th>
         </tr>
     </thead>
     <tbody>
@@ -45,24 +51,20 @@ if(empty($flights)){
               </div>
               <div class="col-sm">
                 <h5 class="mb-0"><?php echo $departure_iata;?></h5>
-                <div class="text">Departure</div>
+                <div class="text"><?php _e( 'Departure', 'airport-flight-status' );?></div>
               </div>
               <div class="col-sm">
                 <h5 class="mb-0"><?php echo $arrival_iata;?></h5>
-                <div class="text">Arrival</div>
+                <div class="text"><?php _e( 'Arrival', 'airport-flight-status' );?></div>
               </div>
               <div class="col-sm">
-              <!--<a href="#" class="btn btn-primary" data-toggle="collapse" data-target="#collapse_<?php //echo $key;?>" aria-expanded="true" aria-controls="collapse_<?php //echo $key;?>">Check details</a>-->
-              <a href="" class="btn btn-primary afs-check-details collapsed" data-toggle="collapse" data-target="#collapse_<?php echo $key;?>" aria-expanded="true" aria-controls="collapse_<?php echo $key;?>" data-post_id="<?php echo $value;?>" data-current_count="<?php echo $key;?>" data-nonce="<?php echo $afs_nonce;?>">Other details</a>
+                <a href="" class="btn btn-primary afs-check-details collapsed" data-toggle="collapse" data-target="#collapse_<?php echo $key;?>" aria-expanded="true" aria-controls="collapse_<?php echo $key;?>" data-post_id="<?php echo $value;?>" data-current_count="<?php echo $key;?>" data-nonce="<?php echo $afs_nonce;?>">Other details</a>
               </div>
           </div>      
       </div>
     </div>
     
     <div id="collapse_<?php echo $key;?>" class="collapse" aria-labelledby="heading_<?php echo $key;?>" data-parent="#afs_accordion">
-    <!--<div class="spinner-border" role="status">
-        <span class="sr-only">Loading...</span>
-    </div>-->
      <div class="card-body">
         <div class="row">
             <div class="col-sm-6">
@@ -72,22 +74,22 @@ if(empty($flights)){
                     <p class="card-text afs-from-airport-date"></p>
                     <div class="row">
                         <div class="col-sm">
-                            <h6>Scheduled</h6>
+                            <h6><?php _e( 'Scheduled', 'airport-flight-status' );?></h6>
                             <div class="text afs-from-airport-scheduled"></div>  
                         </div>
                         <div class="col-sm">
-                            <h6>Estimated</h6> 
+                            <h6><?php _e( 'Estimated', 'airport-flight-status' );?></h6> 
                             <div class="text afs-from-airport-estimated"></div>  
                         </div>
                     </div>
 
                     <div class="row">
                         <div class="col-sm">
-                            <h6>Terminal</h6>  
+                            <h6><?php _e( 'Terminal', 'airport-flight-status' );?></h6>  
                             <div class="text afs-from-airport-terminal"></div>  
                         </div>
                         <div class="col-sm">
-                            <h6>Gate</h6>  
+                            <h6><?php _e( 'Gate', 'airport-flight-status' );?></h6>  
                             <div class="text afs-from-airport-gate"></div>  
                         </div>
                     </div>
@@ -101,22 +103,22 @@ if(empty($flights)){
                     <p class="card-text afs-to-airport-date"></p>
                     <div class="row">
                         <div class="col-sm">
-                            <h6>Scheduled</h6>
+                            <h6><?php _e( 'Scheduled', 'airport-flight-status' );?></h6>
                             <div class="text afs-to-airport-scheduled"></div>  
                         </div>
                         <div class="col-sm">
-                            <h6>Estimated</h6> 
+                            <h6><?php _e( 'Estimated', 'airport-flight-status' );?></h6> 
                             <div class="text afs-to-airport-estimated"></div>  
                         </div>
                     </div>
 
                     <div class="row">
                         <div class="col-sm">
-                            <h6>Terminal</h6>  
+                            <h6><?php _e( 'Terminal', 'airport-flight-status' );?></h6>  
                             <div class="text afs-to-airport-terminal"></div>  
                         </div>
                         <div class="col-sm">
-                            <h6>Gate</h6>  
+                            <h6><?php _e( 'Gate', 'airport-flight-status' );?></h6>  
                             <div class="text afs-to-airport-gate"></div>  
                         </div>
                     </div>

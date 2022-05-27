@@ -4,18 +4,22 @@
  * Creating an submenu settings to add api key and choose airport page id.
  */
 function afs_register_setting_page() {
-    add_submenu_page( 'edit.php?post_type=flight', 'Settings', 'Settings', 'manage_options', 'afs-settings', 'afs_register_setting_page_callback' ); 
+    add_submenu_page( 'edit.php?post_type=flight', __( 'Settings', 'airport-flight-status' ),  __( 'Settings', 'airport-flight-status' ), 'manage_options', 'afs-settings', 'afs_register_setting_page_callback' ); 
 }
   
 function afs_register_setting_page_callback() {
     $afs_API_KEY = get_option('afs_api_key');
     $afs_airport_page = get_option('afs_airport_page_id');
+    $afs_default_airport_iata = get_option('afs_default_airport_iata');
 
     if(isset($_POST['submitted'])) {
         $afs_API_KEY = $_POST['afs_API_KEY'];
         $afs_airport_page = $_POST['afs_airport_page'];
+        $afs_default_airport_iata = $_POST['afs_default_airport_iata'];
+        
         update_option('afs_api_key', $afs_API_KEY);
         update_option('afs_airport_page_id', $afs_airport_page);
+        update_option('afs_default_airport_iata', $afs_default_airport_iata);
     }
   
     ob_start();
@@ -29,7 +33,7 @@ function afs_register_setting_page_callback() {
    * Enqueue scripts and styles
    */
   function afs_wpdocs_scripts_admin(){
-      if($_REQUEST['post_type'] == 'flight'){
+        if(isset($_GET['post_type']) && 'flight' == $_GET['post_type'] ){
           wp_enqueue_style( 'bootstrap-css', plugin_dir_url( __DIR__  ) .'public/css/bootstrap.min.css');
           wp_enqueue_style( 'afs-admin-css', plugin_dir_url( __DIR__  ) .'admin/css/afs-admin.css');
           wp_enqueue_script( 'bootstrap', plugin_dir_url( __DIR__  ) .'public/js/bootstrap.min.js', array(), '1.0.0', true );

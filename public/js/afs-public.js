@@ -34,14 +34,16 @@ jQuery(document).ready(function () {
               if(response.type == "success") {
                 var parent = jQuery('#collapse_'+current_count)
                 var link = jQuery('#afs_airport_page_link').val();
+                var default_airport = jQuery('#afs_default_airport_iata').val();
+                
 
                 if(response.flight_type == 'departure'){
-                    link = link+'?default=LHR&destination='+response.departure_iata;
+                    link = link+'?default='+default_airport+'&destination='+response.departure_iata;
                     var html = '<a href="'+link+'" target="_blank">'+response.departure_airport+'</a>';
                     parent.find(".afs-from-airport-name").html(html)
                     parent.find(".afs-to-airport-name").text(response.arrival_airport)
                 }else{
-                    link = link+'?default=LHR&destination='+response.arrival_iata;
+                    link = link+'?default='+default_airport+'&destination='+response.arrival_iata;
                     var html = '<a href="'+link+'" target="_blank">'+response.arrival_airport+'</a>';
                     parent.find(".afs-to-airport-name").html(html)
                     parent.find(".afs-from-airport-name").text(response.departure_airport)

@@ -6,13 +6,44 @@
     *
     */
     function afs_fetch_arrivals_details($attr) {
-  
-        $args = shortcode_atts( array('arrival_iata' => 'LHR'), $attr );
-      
-        global $wpdb;
-        $query = "SELECT DISTINCT a.ID FROM wp_posts as a INNER JOIN wp_postmeta as b ON a.ID=b.post_id WHERE b.meta_key='afs_arrival_iata' AND b.meta_value='%s';";
-        $results = $wpdb->prepare($query,$args['arrival_iata']);
-        $flights = $wpdb->get_col($results);
+        $flights = [];
+        $afs_default_airport_iata = get_option('afs_default_airport_iata');
+        if(empty($afs_default_airport_iata)){
+            $afs_default_airport_iata = 'LHR';
+        }
+
+        $args = shortcode_atts( array('arrival_iata' => $afs_default_airport_iata), $attr );
+
+        $datetime = new DateTime();
+        $query_args = array(
+            'post_type'  => 'flight',
+            'post_status'   => 'publish',
+            'fields'        => 'ids',
+            'meta_query' => array(
+                'relation' => 'AND',
+                array(
+                    'key'   => 'afs_arrival_iata', // Custom field key.
+                    'value' => $afs_default_airport_iata, // Order of values doesn't matter.
+                    'compare' => 'LIKE'
+                ),
+                array(
+                    'key'   => 'afs_departure_scheduled', // Custom field key.
+                    'value' => $datetime->format(DateTime::ISO8601), // Order of values doesn't matter.
+                    'compare' => '>='
+                ),
+            )
+        );
+
+        // The query
+        $meta_query = new WP_Query( $query_args );
+        if ($meta_query->have_posts()){
+            $flights = $meta_query->posts;
+        }
+
+        if(empty($flights)){
+            _e('No data found', 'airport-flight-status' );
+            return;
+        }
         
         ob_start();
         include_once(plugin_dir_path( __DIR__ ).'public/templates/flights-list-page.php');
@@ -27,14 +58,47 @@
     *
     */
     function afs_fetch_departure_details($attr) {
+        $flights = [];
 
-        $args = shortcode_atts( array('departure_iata' => 'LHR'), $attr );
+        $afs_default_airport_iata = get_option('afs_default_airport_iata');
+        if(empty($afs_default_airport_iata)){
+            $afs_default_airport_iata = 'LHR';
+        }
+
+        $args = shortcode_atts( array('departure_iata' => $afs_default_airport_iata), $attr );
+
+        $datetime = new DateTime();
+        $query_args = array(
+            'post_type'  => 'flight',
+            'post_status'   => 'publish',
+            'fields'        => 'ids',
+            'meta_query' => array(
+                'relation' => 'AND',
+                array(
+                    'key'   => 'afs_departure_iata', // Custom field key.
+                    'value' => $afs_default_airport_iata, // Order of values doesn't matter.
+                    'compare' => 'LIKE'
+                ),
+                array(
+                    'key'   => 'afs_departure_scheduled', // Custom field key.
+                    'value' => $datetime->format(DateTime::ISO8601), // Order of values doesn't matter.
+                    'compare' => '>='
+                ),
+            )
+        );
+
+        // The query
+        $meta_query = new WP_Query( $query_args );
+        if ($meta_query->have_posts()){
+            $flights = $meta_query->posts;
+        }
     
-        global $wpdb;
-        $query = "SELECT DISTINCT a.ID FROM wp_posts as a INNER JOIN wp_postmeta as b ON a.ID=b.post_id WHERE b.meta_key='afs_departure_iata' AND b.meta_value='%s';";
-        $results = $wpdb->prepare($query,$args['departure_iata']);
-        $flights = $wpdb->get_col($results);
+        if(empty($flights)){
+            _e('No data found', 'airport-flight-status' );
+            return;
+        }
         
+        // $flights = $wpdb->get_col($results);
         ob_start();
         include_once(plugin_dir_path( __DIR__ ).'public/templates/flights-list-page.php');
         return ob_get_clean();
@@ -76,8 +140,12 @@
 
         // The query
         $meta_query = new WP_Query( $args );
-        $posts = $meta_query->posts;
-        return $posts;
+        if ($meta_query->have_posts()){
+            $posts = $meta_query->posts;
+            return $posts;
+        }
+
+        return false;
     }
 
     /**
@@ -86,16 +154,24 @@
     *
     */
     function afs_fetch_airport_details($attr) {
+
+        $afs_default_airport_iata = get_option('afs_default_airport_iata');
+        if(empty($afs_default_airport_iata)){
+            $afs_default_airport_iata = 'LHR';
+        }
+
         $args = shortcode_atts( array(
-                'airport_first' => 'LHR',
+                'airport_first' => $afs_default_airport_iata,
                 'airport_second' => 'DOH',
                 ), $attr );
     
         if(!empty($_REQUEST['destination']) ){
-        $args['airport_second'] = $_REQUEST['destination'];
+            $args['airport_second'] = $_REQUEST['destination'];
         }
         
         $flights = afs_get_flights_between_airports($args['airport_first'], $args['airport_second']);
+        
+
         ob_start();
         // include_once(plugin_dir_path( __DIR__ ).'public/templates/flights-list-page.php');
         include_once(plugin_dir_path( __DIR__ ).'public/templates/airport-flights.php');
@@ -156,9 +232,13 @@
         $result['arrival_estimated_time'] = $dte->format('H:i:s');
 
         $result['arrival_actual'] = get_post_meta($post_id, 'afs_arrival_actual', true);
+        
+        $afs_default_airport_iata = get_option('afs_default_airport_iata');
+        if(empty($afs_default_airport_iata)){
+            $afs_default_airport_iata = 'LHR';
+        }
 
-
-        if($result['arrival_iata'] == 'LHR'){
+        if($result['arrival_iata'] == $afs_default_airport_iata){
         $result['flight_type'] = 'departure';
         }else{
         $result['flight_type'] = 'arrival';
@@ -193,7 +273,12 @@
 
         $destination = $_REQUEST['destination'];
 
-        $flights = afs_get_flights_between_airports('LHR', $destination);
+        $afs_default_airport_iata = get_option('afs_default_airport_iata');
+        if(empty($afs_default_airport_iata)){
+            $afs_default_airport_iata = 'LHR';
+        }
+
+        $flights = afs_get_flights_between_airports($afs_default_airport_iata, $destination);
         
         $afs_html = '
         <table id="afs_flight_between_airports" class="display" style="width:100%">
@@ -249,16 +334,16 @@
                         <div class="row">
                             <div class="col-md-5">
                                 <h6>'.$departure_airport.'</h6>
-                                <p>Departure date <h6>'.$departure_actual_flight_date.'</h6></p>
-                                <p>Time <h6>'.$departure_actual_time.'</h6></p>
+                                <p>'.__( 'Departure date', 'airport-flight-status' ).' <h6>'.$departure_actual_flight_date.'</h6></p>
+                                <p>'.__( 'Time', 'airport-flight-status' ).' <h6>'.$departure_actual_time.'</h6></p>
                             </div>
                             <div class="col-md-2">
                                 <h6>'.$airline_name.'</h6>
                             </div>
                             <div class="col-md-5">
                             <h6>'.$arrival_airport.'</h6>
-                                <p>Arrived date <h6>'.$arrival_actual_flight_date.'</h6></p>
-                                <p>Time <h6>'.$arrival_actual_time.'</h6></p>
+                                <p>'.__( 'Arrived date ', 'airport-flight-status' ).'<h6>'.$arrival_actual_flight_date.'</h6></p>
+                                <p>'.__( 'Time ', 'airport-flight-status' ).' <h6>'.$arrival_actual_time.'</h6></p>
                             </div>
                     </div>
                 </div>
