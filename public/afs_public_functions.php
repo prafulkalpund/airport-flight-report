@@ -133,7 +133,7 @@
                 array(
                     'key'   => 'afs_departure_scheduled', // Custom field key.
                     'value' => $datetime->format(DateTime::ISO8601), // Order of values doesn't matter.
-                    'compare' => '<='
+                    'compare' => '<=',
                 ),
             )
         );
@@ -146,6 +146,27 @@
         }
 
         return false;
+    }
+
+
+    function afs_fetch_all_airports_names_and_iata(){
+
+        global $wpdb;
+
+        $query = "SELECT a.iata, b.airport from (SELECT DISTINCT meta_value as iata, post_id FROM wp_postmeta WHERE meta_key LIKE '%afs_arrival_iata%' GROUP BY meta_value) as a JOIN (SELECT DISTINCT meta_value as airport, post_id FROM wp_postmeta WHERE meta_key LIKE '%afs_arrival_airport%' GROUP BY meta_value) as b on a.post_id=b.post_id";
+
+        $results = $wpdb->prepare($query);
+        $departure_airports = $wpdb->get_results($results, ARRAY_A);
+
+        $query = "SELECT a.iata, b.airport from (SELECT DISTINCT meta_value as iata, post_id FROM wp_postmeta WHERE meta_key LIKE '%afs_arrival_iata%' GROUP BY meta_value) as a JOIN (SELECT DISTINCT meta_value as airport, post_id FROM wp_postmeta WHERE meta_key LIKE '%afs_arrival_airport%' GROUP BY meta_value) as b on a.post_id=b.post_id";
+
+        $results = $wpdb->prepare($query);
+        $arrival_airports = $wpdb->get_results($results, ARRAY_A );
+
+        $obj_merged = array_merge($arrival_airports, $departure_airports);
+        $airports_name_and_codes = array_unique($obj_merged, SORT_REGULAR);
+
+        return $airports_name_and_codes;
     }
 
     /**
@@ -163,6 +184,7 @@
         $args = shortcode_atts( array(
                 'airport_first' => $afs_default_airport_iata,
                 'airport_second' => 'DOH',
+                'airport_filter' => 'Applicable',
                 ), $attr );
     
         if(!empty($_REQUEST['destination']) ){
@@ -170,8 +192,13 @@
         }
         
         $flights = afs_get_flights_between_airports($args['airport_first'], $args['airport_second']);
-        
 
+        if($args['airport_filter'] === 'Applicable'){
+           
+            // Here all the airports name and iata code is getting fetched to create dropdown list.
+           $airports_name_and_codes = afs_fetch_all_airports_names_and_iata();
+        }
+        
         ob_start();
         // include_once(plugin_dir_path( __DIR__ ).'public/templates/flights-list-page.php');
         include_once(plugin_dir_path( __DIR__ ).'public/templates/airport-flights.php');
@@ -258,7 +285,7 @@
     }
 
     add_action("wp_ajax_afs_fetch_flight_details", "afs_fetch_flight_details");
-    add_action("wp_ajax_nopriv_afs_fetch_flight_details", "my_must_login");
+    add_action("wp_ajax_nopriv_afs_fetch_flight_details", "afs_fetch_flight_details");
 
 
     /**
@@ -376,9 +403,163 @@
     }
 
     add_action("wp_ajax_afs_flight_between_airports", "afs_flight_between_airports");
-    add_action("wp_ajax_nopriv_afs_flight_between_airports", "my_must_login");
+    add_action("wp_ajax_nopriv_afs_flight_between_airports", "afs_flight_between_airports");
 
     
+/**
+ * Map start here
+ */
+
+    /**
+    * This function is callback function for departure flights shortcode.
+    * @param array $attr parameters of the shortcode.
+    *
+    */
+    function afs_plot_map() {
+        ob_start();
+        include_once(plugin_dir_path( __DIR__ ).'public/templates/airports-map.php');
+        return ob_get_clean();
+    }
+
+    add_shortcode('afs_map', 'afs_plot_map');
+
+
+    /**
+    * This function has query that fetch posts between two airports.
+    * @param string $airport airport iata to fetch flights.
+    * @param string $type departure or departure, Default departure
+    * @param string $afs_compare_by compare by > or <=. Default >
+    *
+    */
+    function afs_get_departure_or_arrival_flights_from_airport($airport, $type='departure', $afs_compare_by = '>'){
+        $airport_type = 'afs_departure_iata';
+        $airport_type_compare = 'afs_departure_scheduled';
+
+        if($type == 'arrival'){
+            $airport_type = 'afs_arrival_iata';
+            $airport_type_compare = 'afs_arrival_scheduled';
+        }
+
+        $datetime = new DateTime();
+        $args = array(
+            'post_type'  => 'flight',
+            'post_status'   => 'publish',
+            'fields'        => 'ids',
+            'meta_query' => array(
+                'relation' => 'AND',
+                array(
+                    'key'   => $airport_type, // Custom field key.
+                    'value' => $airport, // Order of values doesn't matter.
+                ),
+        
+                array(
+                    'key'   => $airport_type_compare, // Custom field key.
+                    'value' => $datetime->format(DateTime::ISO8601), // Order of values doesn't matter.
+                    'compare' => $afs_compare_by,
+                ),
+            )
+        );
+
+        // The query
+        $meta_query = new WP_Query( $args );
+        if ($meta_query->have_posts()){
+            $posts = $meta_query->posts;
+            return $posts;
+        }
+
+        return false;
+    }
+
+    // Comparison function
+    function afs_date_compare($element1, $element2) {
+        $datetime1 = strtotime($element1['datetime']);
+        $datetime2 = strtotime($element2['datetime']);
+        return $datetime1 - $datetime2;
+    } 
+
+
+    /**
+     * Ajax
+     * This is callback function of ajax to fetch the flight details from the pined airport.
+     */
+    function afs_fetch_all_flights_from_airport() {
+
+        if ( !wp_verify_nonce( $_REQUEST['nonce'], "afs_fetch_all_flights_from_airport_nonce")) {
+            exit("Wrong request");
+        }
+
+        $airport_iata = $_REQUEST['airport_iata'];
+
+        //Another approch could be call same function of afs_airport shortcode.
+        $departure_flights = afs_get_departure_or_arrival_flights_from_airport(
+            $airport_iata
+        );
+        
+        //Create an new array
+        $all_flights = [];
+        
+        if(!empty($departure_flights)){
+
+            foreach ($departure_flights as $key => $value) {
+                $temp_array = [];
+                $ddt = '';
+                
+                $temp_array['flight_type'] = 'Departure';
+                $temp_array['flight_number'] = get_post_meta($value, 'afs_flight_number', true);
+                $temp_array['airline_name'] = get_post_meta($value, 'afs_airline_name', true);
+                $departure_actual = get_post_meta($value, 'afs_departure_actual', true);
+                $ddt = new DateTime($departure_actual);
+                $temp_array['flight_time'] = $ddt->format("H:i");
+                $all_flights[] = $temp_array;                
+            }
+        }
+
+        $arrival_flights = afs_get_departure_or_arrival_flights_from_airport(
+            $airport_iata, 
+            'arrival'
+        );
+
+        if(!empty($arrival_flights)){
+
+            foreach ($arrival_flights as $key => $value) {
+                $temp_array = [];
+                $adt = '';
+                
+                $temp_array['flight_type'] = 'Arrival';
+                $temp_array['airline_name'] = get_post_meta($value, 'afs_airline_name', true);
+                $temp_array['flight_number'] = get_post_meta($value, 'afs_flight_number', true);
+                $arrival_actual = get_post_meta($value, 'afs_arrival_actual', true);
+                $adt = new DateTime($arrival_actual);
+                $temp_array['flight_time'] = $adt->format("H:i");
+                $all_flights[] = $temp_array;                
+            }
+        }
+
+        // Sort the array 
+        usort($all_flights, 'date_compare');
+
+
+        $result['flights'] = $all_flights;
+
+        // Adding first and second airport iata into $result variable.
+        $result['airport_iata'] = $airport_iata;
+
+        if(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+            $result['type'] = 'success';
+            $result = json_encode($result);
+            echo $result;
+        }
+        else {
+            header("Location: ".$_SERVER["HTTP_REFERER"]);
+        }
+
+        die();
+
+    }
+
+    add_action("wp_ajax_afs_fetch_all_flights_from_airport", "afs_fetch_all_flights_from_airport");
+    add_action("wp_ajax_nopriv_afs_fetch_all_flights_from_airport", "afs_fetch_all_flights_from_airport");
+
     /**
      * Enqueue scripts and styles
      */
@@ -391,7 +572,15 @@
         wp_enqueue_script( 'bootstrap', plugin_dir_url( __DIR__ ) .'public/js/bootstrap.min.js', array(), '1.0.0', true );
         wp_enqueue_script( 'datatable', plugin_dir_url( __DIR__ ) .'public/js/jquery.dataTables.min.js', array(), '1.12.0', true );
         wp_enqueue_script( 'afs-public-js', plugin_dir_url( __DIR__ ) .'public/js/afs-public.js', array(), '1.12.0', true );
-        wp_localize_script( 'afs-public-js', 'ajs_ajax_url', array( 'ajaxurl' => admin_url( 'admin-ajax.php' )));        
+        wp_localize_script(
+            'afs-public-js',
+            'ajs_extra_param',
+            array( 
+                'ajaxurl' => admin_url( 'admin-ajax.php' ),
+                'plane_img' => plugin_dir_url( __DIR__ ) . 'plane-red.png',
+                'all_flight_airport_name_iata' => afs_fetch_all_airports_names_and_iata(),
+            )
+        );        
     
     }
     add_action( 'wp_enqueue_scripts', 'afs_wpdocs_scripts' );

@@ -4,7 +4,7 @@
  * Plugin Name:       Airport flight status reports 
  * Plugin URI:        http://praful-kalpund/illustrdevtest
  * Description:       This plugin shows the airport specific arrivals and departure. Also, It can show the flights between two airports.
- * Version:           1.0.0
+ * Version:           1.2.0
  * Author:            Praful Kalpund
  * Author URI:        http://praful-kalpund/illustrdevtest/Praful-Kalpund
  * License:           GPL-2.0+

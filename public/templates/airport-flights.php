@@ -1,50 +1,32 @@
 <?php
-
 if(empty($flights)){
+    echo '<div class="container" id="afs_airport_flights_list">';
     echo '<h2>No data found</h2>';
+    echo '</div>';
     return;
 }
 
-$afs_default_airport_iata = get_option('afs_default_airport_iata');
-if(empty($afs_default_airport_iata)){
-    $afs_default_airport_iata = 'LHR';
-}
+if(!empty($airports_name_and_codes)){
 
-// Here all the airports name and iata code is getting fetched to create dropdown list.
-global $wpdb;
+    // Nonce for ajax
+    $afs_nonce = wp_create_nonce("afs_flight_between_airports_nonce");
 
-$query = "SELECT a.iata, b.airport from (SELECT DISTINCT meta_value as iata, post_id FROM wp_postmeta WHERE meta_key LIKE '%afs_arrival_iata%' GROUP BY meta_value) as a JOIN (SELECT DISTINCT meta_value as airport, post_id FROM wp_postmeta WHERE meta_key LIKE '%afs_arrival_airport%' GROUP BY meta_value) as b on a.post_id=b.post_id";
+    $afs_airport_options = '';
 
-$results = $wpdb->prepare($query);
-$departure_airports = $wpdb->get_results($results, ARRAY_A);
+    foreach ($airports_name_and_codes as $key => $value) {
+        $selected = '';
+        $iata = $value['iata'];
+        if($iata == $afs_default_airport_iata){
+            continue;
+        }
 
-
-$query = "SELECT a.iata, b.airport from (SELECT DISTINCT meta_value as iata, post_id FROM wp_postmeta WHERE meta_key LIKE '%afs_arrival_iata%' GROUP BY meta_value) as a JOIN (SELECT DISTINCT meta_value as airport, post_id FROM wp_postmeta WHERE meta_key LIKE '%afs_arrival_airport%' GROUP BY meta_value) as b on a.post_id=b.post_id";
-
-$results = $wpdb->prepare($query);
-$arrival_airports = $wpdb->get_results($results, ARRAY_A );
-
-$obj_merged = array_merge($arrival_airports, $departure_airports);
-$airports_name_and_codes =array_unique($obj_merged, SORT_REGULAR);
-
-$afs_airport_options = '';
-
-foreach ($airports_name_and_codes as $key => $value) {
-    $selected = '';
-    $iata = $value['iata'];
-    if($iata == $afs_default_airport_iata){
-        continue;
+        if($iata == $args['airport_second']){
+            $selected = ' selected ';
+        }
+        $airport = $value['airport'];
+        $afs_airport_options .= '<option value="'.$iata.'" '.$selected.'>'.$airport.'</option>';
     }
 
-    if($iata == $args['airport_second']){
-        $selected = ' selected ';
-    }
-    $airport = $value['airport'];
-    $afs_airport_options .= '<option value="'.$iata.'" '.$selected.'>'.$airport.'</option>';
-}
-
-// Nonce for ajax
-$afs_nonce = wp_create_nonce("afs_flight_between_airports_nonce");
 ?>
 
 <div class="container" id="afs_airport_flights_list">
@@ -66,6 +48,8 @@ $afs_nonce = wp_create_nonce("afs_flight_between_airports_nonce");
         </div>
     </div>
 </div>
+
+<?php } ?>
 
 <?php 
 

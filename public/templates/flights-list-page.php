@@ -1,7 +1,9 @@
 <?php
 
 if(empty($flights)){
+    echo '<div class="container" id="afs_airport_flights_list">';
     echo '<h2>No data found</h2>';
+    echo '</div>';
     return;
 }
 

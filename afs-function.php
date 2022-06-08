@@ -157,12 +157,12 @@ function afs_slugify($text){
             'access_key' => get_option('afs_api_key'),
         ]);
 		// Arrival link: http://api.aviationstack.com/v1/flights?access_key=eead096fd179621c96778d5cb0e507a6&arr_iata=LHR
-        $arrival_response = wp_remote_get(sprintf('http://api.aviationstack.com/v1/flights?%1$s&arr_iata=%2$s', $queryString, $afs_default_airport_iata ));
-        afs_flight_create_posts($arrival_response);
+        // $arrival_response = wp_remote_get(sprintf('http://api.aviationstack.com/v1/flights?%1$s&arr_iata=%2$s', $queryString, $afs_default_airport_iata ));
+        // afs_flight_create_posts($arrival_response);
         
 		// Departure link: http://api.aviationstack.com/v1/flights?access_key=eead096fd179621c96778d5cb0e507a6&dep_iata=LHR
-        $departure_response = wp_remote_get(sprintf('http://api.aviationstack.com/v1/flights?%1$s&dep_iata=%2$s', $queryString, $afs_default_airport_iata ));
-        afs_flight_create_posts($departure_response);
+        // $departure_response = wp_remote_get(sprintf('http://api.aviationstack.com/v1/flights?%1$s&dep_iata=%2$s', $queryString, $afs_default_airport_iata ));
+        // afs_flight_create_posts($departure_response);
        
     }
 
@@ -173,3 +173,5 @@ function afs_slugify($text){
     if ( ! wp_next_scheduled( 'afs_pk_cron_hook' ) ) {
         wp_schedule_event( time(), 'daily', 'afs_pk_cron_hook' );
     }
+
+    // afs_get_flights_from_api();
